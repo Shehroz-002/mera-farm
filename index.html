@@ -921,6 +921,8 @@ var auth, firestore;
 let db = { animals: [], health: [], breeding: [], milk: [], finance: [] };
 let currentUser = null;
 
+function uid() { return '_' + Math.random().toString(36).substr(2,9); }
+
 function emailToKey(email) {
   return email.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
 }
