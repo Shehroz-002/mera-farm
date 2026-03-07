@@ -1135,25 +1135,23 @@ async function confirmLogout() {
 }
 
 function initApp() {
-  // Show loading while Firebase checks auth state
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'none';
   document.getElementById('main-fab').style.display = 'none';
-  document.body.innerHTML += `<div id="splash" style="position:fixed;inset:0;background:linear-gradient(160deg,#2C1A0E,#4A7C59);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999">
-    <div style="font-size:60px">🌾</div>
-    <div style="font-family:'Amiri',serif;color:#D4A853;font-size:28px;margin-top:10px">Mera Farm</div>
-    <div style="color:#F2DFA0;font-size:13px;margin-top:8px;opacity:0.7">Loading your farm...</div>
-  </div>`;
-
+  const splash = document.createElement('div');
+  splash.id = 'splash';
+  splash.style.cssText = 'position:fixed;inset:0;background:linear-gradient(160deg,#2C1A0E,#4A7C59);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999';
+  splash.innerHTML = '<div style="font-size:60px">🌾</div><div style="font-family:Amiri,serif;color:#D4A853;font-size:28px;margin-top:10px">Mera Farm</div><div style="color:#F2DFA0;font-size:13px;margin-top:8px;opacity:0.7">Loading your farm...</div>';
+  document.body.appendChild(splash);
   auth.onAuthStateChanged(async (user) => {
-    const splash = document.getElementById('splash');
+    const sp = document.getElementById('splash');
     if (user) {
       currentUser = { uid: user.uid, email: user.email, name: user.displayName || user.email.split('@')[0] };
       await loadFromCloud(user.uid);
-      if (splash) splash.remove();
+      if (sp) sp.remove();
       showApp(); renderAll();
     } else {
-      if (splash) splash.remove();
+      if (sp) sp.remove();
       showLoginScreen();
     }
   });
@@ -1223,23 +1221,31 @@ function populateAnimalSelects() {
 
 // ---- SAVE FUNCTIONS ----
 function saveAnimal() {
-  const a = {
-    id: uid(), name: document.getElementById('a-name').value,
-    tag: document.getElementById('a-tag').value, species: document.getElementById('a-species').value,
-    gender: document.getElementById('a-gender').value, breed: document.getElementById('a-breed').value,
-    dob: document.getElementById('a-dob').value, purchaseDate: document.getElementById('a-purchase-date').value,
-    purchasePrice: +document.getElementById('a-purchase-price').value,
-    color: document.getElementById('a-color').value, notes: document.getElementById('a-notes').value,
-    photo: currentPhotoBase64 || null,
-    createdAt: new Date().toISOString()
-  };
-  if (!a.name) { alert('Please enter a name'); return; }
-  db.animals.push(a);
-  // Auto-add purchase to finance
-  if (a.purchasePrice > 0) {
-    db.finance.push({ id: uid(), type: 'Purchase', animalId: a.id, date: a.purchaseDate||new Date().toISOString().split('T')[0], amount: a.purchasePrice, desc: 'Purchase: '+a.name, createdAt: new Date().toISOString() });
+  try {
+    const a = {
+      id: uid(), name: document.getElementById('a-name').value.trim(),
+      tag: document.getElementById('a-tag').value, species: document.getElementById('a-species').value,
+      gender: document.getElementById('a-gender').value, breed: document.getElementById('a-breed').value,
+      dob: document.getElementById('a-dob').value, purchaseDate: document.getElementById('a-purchase-date').value,
+      purchasePrice: +document.getElementById('a-purchase-price').value,
+      color: document.getElementById('a-color').value, notes: document.getElementById('a-notes').value,
+      photo: currentPhotoBase64 || null,
+      createdAt: new Date().toISOString()
+    };
+    if (!a.name) { alert('Please enter a name'); return; }
+    db.animals.push(a);
+    if (a.purchasePrice > 0) {
+      db.finance.push({ id: uid(), type: 'Purchase', animalId: a.id, date: a.purchaseDate||new Date().toISOString().split('T')[0], amount: a.purchasePrice, desc: 'Purchase: '+a.name, createdAt: new Date().toISOString() });
+    }
+    save();
+    closeModal('modal-animal');
+    clearForm('modal-animal');
+    resetPhotoField();
+    renderAll();
+  } catch(err) {
+    alert('Error saving animal: ' + err.message);
+    console.error(err);
   }
-  save(); closeModal('modal-animal'); clearForm('modal-animal'); resetPhotoField(); renderAll();
 }
 
 function saveHealth() {
